@@ -28,7 +28,26 @@ app.get('/api/captions', async (req, res) => {
             return res.status(404).json({ error: 'No captions found for this video' });
         }
 
-        res.json({ captions });
+        const convertSecondsToTime = seconds => {
+            
+            let hrs = Math.floor(seconds / 3600);
+            let mins = Math.floor((seconds % 3600) / 60);
+            let secs = Math.floor(seconds % 60);
+        
+            // Add leading zeroes if the values are less than 10
+            hrs = hrs < 10 ? '0' + hrs : hrs;
+            mins = mins < 10 ? '0' + mins : mins;
+            secs = secs < 10 ? '0' + secs : secs;
+        
+            return `${hrs}:${mins}:${secs}`;
+        }
+
+        const captionsWithTimeStamp = captions.map(caption=>{
+            return {start:convertSecondsToTime(parseFloat(caption.start)),
+                text:caption.text}
+        })
+
+        res.json(captionsWithTimeStamp);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to fetch captions' });
