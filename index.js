@@ -1,8 +1,10 @@
 const express = require('express');
 const youtubeCaptionsScraper = require('youtube-captions-scraper');
+const cors = require("cors");
 const app = express();
 
 // Middleware to parse JSON
+app.use(cors())
 app.use(express.json());
 
 // API endpoint to fetch captions
