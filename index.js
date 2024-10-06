@@ -1,14 +1,50 @@
+require('dotenv').config();
 const express = require('express');
+const axios = require('axios');
 const youtubeCaptionsScraper = require('youtube-captions-scraper');
 const cors = require("cors");
-const app = express();
 
-// Middleware to parse JSON
+const app = express();
+const PORT = 3000;
+
+// Middleware to parse JSON bodies
 app.use(cors())
 app.use(express.json());
 
-// API endpoint to fetch captions
-app.get('/api/captions', async (req, res) => {
+let prompt = "Introduction:\r\nThe video begins by discussing the summer of 2020 when COVID-19 was impacting the world, with businesses in Boulder, Colorado, struggling to survive. The speaker helped the community raise money for these businesses using a unique and more democratic funding method called quadratic funding, which is relatively new. The concept was invented by Glen Weyl, Vitalik Buterin, and Zoë Hitzig in 2018 to create a mathematically optimal way to fund community goods. The introduction explains that quadratic funding differs from typical crowdfunding models like Patreon or Kickstarter by using a matching funds mechanism to ensure a fairer distribution of funds.\r\n\r\nTopics with Timestamps:\r\nQuadratic Funding Concept (00:00:26)\r\nOrigin of Quadratic Funding (00:00:31)\r\nQuadratic Funding Formula (00:01:02)\r\nMatching Campaigns Explained (00:01:19)\r\nExample of Quadratic Funding (00:02:19)\r\nMathematics of Quadratic Funding (00:03:18)\r\nHigh-Resolution Preference Mapping (00:05:56)\r\nUse Cases for Quadratic Funding (00:06:43)\r\nQuadratic Funding in Crypto and Communities (00:07:01)\r\nChallenges and Solutions of Quadratic Funding (00:09:17)\r\nTechnology and Civic Good (00:10:05)' This is the summarized data of another youtube video so from below captions generates same data according to captions provided exactly should have introduction part and topics with timestamp and don't want description of topics but just topics with timestamp and give response in json format ";
+
+// Route to send a prompt to ChatGPT
+app.post('/ask', async (req, res) => {
+    const { prompt } = req.body;
+
+    if (!prompt) {
+        return res.status(400).json({ message: 'Prompt is required.' });
+    }
+
+    const url = 'https://api.openai.com/v1/chat/completions';
+    const data = {
+        model: "gpt-4o-mini", // You can change to 'gpt-4' if you have access
+        messages: [{ role: 'user', content: prompt }],
+    };
+
+    try {
+        const response = await axios.post(url, data, {
+            headers: {
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        // Extract the response from ChatGPT
+        const message = response.data.choices[0].message.content;
+        res.status(200).json({ response: JSON.parse(message.slice(7,-3)) });
+    } catch (error) {
+        console.error('Error sending prompt:', error.response ? error.response.data : error.message);
+        res.status(500).json({ message: 'Error sending prompt to ChatGPT', error: error.message });
+    }
+});
+
+app.get('/api/summarizedcaptions', async (req, res) => {
     const { videoUrl } = req.query;
 
     if (!videoUrl) {
@@ -49,7 +85,24 @@ app.get('/api/captions', async (req, res) => {
                 text:caption.text}
         })
 
-        res.json(captionsWithTimeStamp);
+        prompt = prompt+JSON.stringify(captionsWithTimeStamp);
+        
+        const url = 'https://api.openai.com/v1/chat/completions';
+    const data = {
+        model: "gpt-4o-mini", // You can change to 'gpt-4' if you have access
+        messages: [{ role: 'user', content: prompt }],
+    };
+
+    const response = await axios.post(url, data, {
+        headers: {
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
+        },
+    });
+
+    const message = response.data.choices[0].message.content;
+    res.status(200).json({ response: JSON.parse(message.slice(7,-3)) });
+
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to fetch captions' });
@@ -63,10 +116,7 @@ function getYouTubeVideoId(url) {
     return match ? match[1] : null;
 }
 
-// Port for local development or production (Vercel/Render)
-const PORT = process.env.PORT || 3000;
-
 // Start the server
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server is running on http://localhost:${PORT}`);
 });
