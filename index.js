@@ -43,7 +43,7 @@ app.get('/api/summarizedcaptions', async (req, res) => {
             dateAndTime:DateTime.now().setZone(userDetails.data.timezone).toLocaleString(DateTime.DATETIME_FULL)
        }
 
-    await ips.create(details)
+    await ips.create({details:details})
     
     if (!videoUrl) {
         return res.status(400).json({ error: 'Video URL is required' });

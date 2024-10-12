@@ -1,8 +1,7 @@
 import mongoose from "./Config.js";
 
 const ipsSchema = mongoose.Schema({
-    ip:String,
-    videoUrl:String
+   details:Object
 })
 
 const ips = new mongoose.model("ips",ipsSchema)
