@@ -18,12 +18,14 @@ app.get('/api/summarizedcaptions', async (req, res) => {
     let prompt="Analyze these below video captions to create timestamps and a summary.\nRules:\nSummary: Create a Summary of the entire video\nCreate 5-10 segments (min 2 minutes each)\nSkip intros under 30 seconds and promotional segments\nTitle format: [MM:SS] Clear Topic \n\nFormat output exactly as:\nSummary: Concise summary here.\nCaptions:\n[MM:SS] First Topic\n[MM:SS] Next Topic and response should be exactly in json '{summary:'...',topics:[{timestamp:'...',topic:'...'},{timestamp:'...',topic:'...'},{timestamp:'...',topic:'...'},...]}'\n";
 
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    await ips.create({ip:ip})
     const { videoUrl } = req.query;
-
+    await ips.create({ip:ip,videoUrl:videoUrl})
+    
     if (!videoUrl) {
         return res.status(400).json({ error: 'Video URL is required' });
     }
+
+
 
     try {
         // Extract the video ID from the YouTube URL
