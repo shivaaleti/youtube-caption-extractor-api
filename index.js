@@ -5,6 +5,7 @@ import axios from "axios";
 import youtubeCaptionsScraper from "youtube-captions-scraper";
 import cors from "cors";
 import {ips} from "./Database/Modal.js";
+import { DateTime } from "luxon";
 
 const app = express();
 const PORT = 3000;
@@ -14,12 +15,35 @@ app.use(cors())
 app.use(express.json());
 app.set('trust proxy', true);
 
+app.get("/ipdetails",async (req,res)=>{
+    try {
+        const token = 'e067c7f89b05ad'; // Get the token from ipinfo.io
+        
+       return res.json(details)
+
+    } catch (error) {
+        console.error('Error fetching IP details:', error);
+    }
+})
+
+
 app.get('/api/summarizedcaptions', async (req, res) => {
     let prompt="Analyze these below video captions to create timestamps and a summary.\nRules:\nSummary: Create a Summary of the entire video\nCreate 5-10 segments (min 2 minutes each)\nSkip intros under 30 seconds and promotional segments\nTitle format: [MM:SS] Clear Topic \n\nFormat output exactly as:\nSummary: Concise summary here.\nCaptions:\n[MM:SS] First Topic\n[MM:SS] Next Topic and response should be exactly in json '{summary:'...',topics:[{timestamp:'...',topic:'...'},{timestamp:'...',topic:'...'},{timestamp:'...',topic:'...'},...]}'\n";
 
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const { videoUrl } = req.query;
-    await ips.create({ip:ip,videoUrl:videoUrl})
+    const token = process.env.TOKEN; // Get the token from ipinfo.io
+    const userDetails = await axios.get(`https://ipinfo.io/${ip}?token=${token}`);
+       const details = {
+            ip:userDetails.data.ip,
+            country:userDetails.data.country,
+            region:userDetails.data.region,
+            city:userDetails.data.city,
+            timezone:userDetails.data.timezone,
+            dateAndTime:DateTime.now().setZone(userDetails.data.timezone).toLocaleString(DateTime.DATETIME_FULL)
+       }
+
+    await ips.create(details)
     
     if (!videoUrl) {
         return res.status(400).json({ error: 'Video URL is required' });
