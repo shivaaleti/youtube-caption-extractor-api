@@ -1,8 +1,10 @@
-require('dotenv').config();
-const express = require('express');
-const axios = require('axios');
-const youtubeCaptionsScraper = require('youtube-captions-scraper');
-const cors = require("cors");
+import dotenv from "dotenv";
+dotenv.config();
+import express from "express";
+import axios from "axios";
+import youtubeCaptionsScraper from "youtube-captions-scraper";
+import cors from "cors";
+import {ips} from "./Database/Modal.js";
 
 const app = express();
 const PORT = 3000;
@@ -10,10 +12,13 @@ const PORT = 3000;
 // Middleware to parse JSON bodies
 app.use(cors())
 app.use(express.json());
+app.set('trust proxy', true);
 
 app.get('/api/summarizedcaptions', async (req, res) => {
     let prompt="Analyze these below video captions to create timestamps and a summary.\nRules:\nSummary: Create a Summary of the entire video\nCreate 5-10 segments (min 2 minutes each)\nSkip intros under 30 seconds and promotional segments\nTitle format: [MM:SS] Clear Topic \n\nFormat output exactly as:\nSummary: Concise summary here.\nCaptions:\n[MM:SS] First Topic\n[MM:SS] Next Topic and response should be exactly in json '{summary:'...',topics:[{timestamp:'...',topic:'...'},{timestamp:'...',topic:'...'},{timestamp:'...',topic:'...'},...]}'\n";
 
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    await ips.create({ip:ip})
     const { videoUrl } = req.query;
 
     if (!videoUrl) {
