@@ -35,6 +35,7 @@ app.get('/api/summarizedcaptions', async (req, res) => {
     const token = process.env.TOKEN; // Get the token from ipinfo.io
     const userDetails = await axios.get(`https://ipinfo.io/${ip}?token=${token}`);
        const details = {
+            videoUrl:videoUrl,
             ip:userDetails.data.ip,
             country:userDetails.data.country,
             region:userDetails.data.region,
